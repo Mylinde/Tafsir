@@ -1,0 +1,103 @@
+name: Convert Tafsir to JSON
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a GitHub Release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Validate text files
+        run: |
+          echo "Checking for Tafsir text files..."
+          FILE_COUNT=$(ls -1 tafsir_al_quran.txt_*.txt 2>/dev/null | wc -l)
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "Error: No Tafsir text files found!"
+            exit 1
+          fi
+          echo "Found $FILE_COUNT text files"
+      
+      - name: Run conversion
+        run: |
+          echo "Starting Tafsir conversion..."
+          python3 convert_tafsir_to_json.py . tafsir_json_output
+      
+      - name: Generate statistics
+        run: |
+          echo "=== Conversion Statistics ===" > conversion_stats.txt
+          echo "" >> conversion_stats.txt
+          echo "Generated files:" >> conversion_stats.txt
+          ls -1 tafsir_json_output/*.json 2>/dev/null | wc -l >> conversion_stats.txt
+          echo "" >> conversion_stats.txt
+          echo "Total size:" >> conversion_stats.txt
+          du -sh tafsir_json_output >> conversion_stats.txt
+          echo "" >> conversion_stats.txt
+          echo "Individual Sura files:" >> conversion_stats.txt
+          ls -lh tafsir_json_output/de_tafsir_surah_*.json 2>/dev/null | awk '{print $9, "-", $5}' >> conversion_stats.txt || echo "No Sura files found" >> conversion_stats.txt
+          echo "" >> conversion_stats.txt
+          echo "Complete file:" >> conversion_stats.txt
+          ls -lh tafsir_json_output/de_tafsir_complete.json 2>/dev/null | awk '{print $9, "-", $5}' >> conversion_stats.txt || echo "No complete file found" >> conversion_stats.txt
+          
+          cat conversion_stats.txt
+      
+      - name: Upload conversion artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tafsir-json-${{ github.run_number }}
+          path: |
+            tafsir_json_output/
+            conversion_stats.txt
+          retention-days: 90
+      
+      - name: Create Release
+        if: ${{ inputs.create_release }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Tafsir JSON Release v${{ github.run_number }}
+          body: |
+            # Tafsir Al-Qur'ān Al-Karīm - JSON Format
+            
+            This release contains the German Tafsir (commentary) of the Qur'an in JSON format.
+            
+            **Author:** Muhammad Ibn Ahmad Ibn Rassoul
+            **Publisher:** IB Verlag Islamische Bibliothek
+            **Edition:** 41. Auflage
+            
+            ## Files
+            
+            - `de_tafsir_complete.json` - Complete Tafsir with all Suras and metadata
+            - `de_tafsir_surah_*.json` - Individual Sura files (1-114)
+            - `conversion_stats.txt` - Conversion statistics
+            
+            ## Usage
+            
+            Download the JSON files and integrate them into your Qur'an application.
+            
+            ## Copyright
+            
+            Die Vervielfältigung, der Nachdruck und die Übersetzung dieses Werkes 
+            in eine Fremdsprache sind erlaubt, wenn dabei auf diese Quelle hingewiesen wird.
+          files: |
+            tafsir_json_output/*.json
+            conversion_stats.txt
+          draft: false
+          prerelease: false
