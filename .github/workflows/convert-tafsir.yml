@@ -45,16 +45,16 @@ jobs:
           echo "=== Conversion Statistics ===" > conversion_stats.txt
           echo "" >> conversion_stats.txt
           echo "Generated files:" >> conversion_stats.txt
-          ls -1 tafsir_json_output/*.json | wc -l >> conversion_stats.txt
+          ls -1 tafsir_json_output/*.json 2>/dev/null | wc -l >> conversion_stats.txt
           echo "" >> conversion_stats.txt
           echo "Total size:" >> conversion_stats.txt
           du -sh tafsir_json_output >> conversion_stats.txt
           echo "" >> conversion_stats.txt
           echo "Individual Sura files:" >> conversion_stats.txt
-          ls -lh tafsir_json_output/de_tafsir_surah_*.json | awk '{print $9, "-", $5}' >> conversion_stats.txt
+          ls -lh tafsir_json_output/de_tafsir_surah_*.json 2>/dev/null | awk '{print $9, "-", $5}' >> conversion_stats.txt || echo "No Sura files found" >> conversion_stats.txt
           echo "" >> conversion_stats.txt
           echo "Complete file:" >> conversion_stats.txt
-          ls -lh tafsir_json_output/de_tafsir_complete.json | awk '{print $9, "-", $5}' >> conversion_stats.txt
+          ls -lh tafsir_json_output/de_tafsir_complete.json 2>/dev/null | awk '{print $9, "-", $5}' >> conversion_stats.txt || echo "No complete file found" >> conversion_stats.txt
           
           cat conversion_stats.txt
       

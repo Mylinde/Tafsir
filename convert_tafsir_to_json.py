@@ -19,6 +19,10 @@ from pathlib import Path
 class TafsirConverter:
     """Converts Tafsir text files to JSON format."""
     
+    # Arabic diacritical marks and characters for text formatting
+    ARABIC_DIACRITICS = "āīūḥṣḍṭẓ'ʿḤṢḌṬẒĀĪŪǧǦ"
+    ARABIC_CHAR_CLASS = r'[A-ZĀĪŪḤṢḌṬẒǦa-zāīūḥṣḍṭẓǧ''ʿ-]+'
+    
     def __init__(self, input_dir: str, output_dir: str):
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
@@ -92,11 +96,11 @@ class TafsirConverter:
             # Match words containing Arabic diacritical marks
             def replace_arabic(match):
                 word = match.group(0)
-                if any(c in word for c in "āīūḥṣḍṭẓ'ʿḤṢḌṬẒĀĪŪǧǦ"):
+                if any(c in word for c in self.ARABIC_DIACRITICS):
                     return f'<em>{word}</em>'
                 return word
             
-            para = re.sub(r'\b[A-ZĀĪŪḤṢḌṬẒǦa-zāīūḥṣḍṭẓǧ''ʿ-]+\b', replace_arabic, para)
+            para = re.sub(r'\b' + self.ARABIC_CHAR_CLASS + r'\b', replace_arabic, para)
             
             html_parts.append(f'<p>{para}</p>')
         
