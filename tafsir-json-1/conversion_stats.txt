@@ -1,0 +1,99 @@
+=== Conversion Statistics ===
+
+Generated files:
+88
+
+Total size:
+9.8M	tafsir_json_output
+
+Individual Sura files:
+tafsir_json_output/de_tafsir_surah_1.json - 34K
+tafsir_json_output/de_tafsir_surah_10.json - 68K
+tafsir_json_output/de_tafsir_surah_101.json - 16K
+tafsir_json_output/de_tafsir_surah_114.json - 446K
+tafsir_json_output/de_tafsir_surah_13.json - 177K
+tafsir_json_output/de_tafsir_surah_14.json - 42K
+tafsir_json_output/de_tafsir_surah_16.json - 136K
+tafsir_json_output/de_tafsir_surah_17.json - 116K
+tafsir_json_output/de_tafsir_surah_18.json - 72K
+tafsir_json_output/de_tafsir_surah_19.json - 34K
+tafsir_json_output/de_tafsir_surah_2.json - 506K
+tafsir_json_output/de_tafsir_surah_21.json - 104K
+tafsir_json_output/de_tafsir_surah_22.json - 66K
+tafsir_json_output/de_tafsir_surah_23.json - 52K
+tafsir_json_output/de_tafsir_surah_24.json - 86K
+tafsir_json_output/de_tafsir_surah_25.json - 48K
+tafsir_json_output/de_tafsir_surah_26.json - 69K
+tafsir_json_output/de_tafsir_surah_27.json - 81K
+tafsir_json_output/de_tafsir_surah_28.json - 50K
+tafsir_json_output/de_tafsir_surah_29.json - 37K
+tafsir_json_output/de_tafsir_surah_3.json - 243K
+tafsir_json_output/de_tafsir_surah_30.json - 59K
+tafsir_json_output/de_tafsir_surah_32.json - 57K
+tafsir_json_output/de_tafsir_surah_33.json - 91K
+tafsir_json_output/de_tafsir_surah_35.json - 73K
+tafsir_json_output/de_tafsir_surah_37.json - 78K
+tafsir_json_output/de_tafsir_surah_39.json - 87K
+tafsir_json_output/de_tafsir_surah_4.json - 204K
+tafsir_json_output/de_tafsir_surah_40.json - 47K
+tafsir_json_output/de_tafsir_surah_41.json - 51K
+tafsir_json_output/de_tafsir_surah_42.json - 42K
+tafsir_json_output/de_tafsir_surah_43.json - 51K
+tafsir_json_output/de_tafsir_surah_44.json - 24K
+tafsir_json_output/de_tafsir_surah_45.json - 20K
+tafsir_json_output/de_tafsir_surah_46.json - 34K
+tafsir_json_output/de_tafsir_surah_48.json - 61K
+tafsir_json_output/de_tafsir_surah_49.json - 25K
+tafsir_json_output/de_tafsir_surah_5.json - 121K
+tafsir_json_output/de_tafsir_surah_51.json - 22K
+tafsir_json_output/de_tafsir_surah_52.json - 31K
+tafsir_json_output/de_tafsir_surah_53.json - 24K
+tafsir_json_output/de_tafsir_surah_54.json - 30K
+tafsir_json_output/de_tafsir_surah_55.json - 17K
+tafsir_json_output/de_tafsir_surah_56.json - 40K
+tafsir_json_output/de_tafsir_surah_57.json - 108K
+tafsir_json_output/de_tafsir_surah_58.json - 26K
+tafsir_json_output/de_tafsir_surah_59.json - 38K
+tafsir_json_output/de_tafsir_surah_6.json - 119K
+tafsir_json_output/de_tafsir_surah_60.json - 28K
+tafsir_json_output/de_tafsir_surah_61.json - 11K
+tafsir_json_output/de_tafsir_surah_62.json - 14K
+tafsir_json_output/de_tafsir_surah_63.json - 9.3K
+tafsir_json_output/de_tafsir_surah_64.json - 21K
+tafsir_json_output/de_tafsir_surah_65.json - 14K
+tafsir_json_output/de_tafsir_surah_66.json - 15K
+tafsir_json_output/de_tafsir_surah_67.json - 25K
+tafsir_json_output/de_tafsir_surah_68.json - 19K
+tafsir_json_output/de_tafsir_surah_69.json - 19K
+tafsir_json_output/de_tafsir_surah_7.json - 138K
+tafsir_json_output/de_tafsir_surah_70.json - 16K
+tafsir_json_output/de_tafsir_surah_71.json - 10K
+tafsir_json_output/de_tafsir_surah_72.json - 16K
+tafsir_json_output/de_tafsir_surah_73.json - 13K
+tafsir_json_output/de_tafsir_surah_74.json - 17K
+tafsir_json_output/de_tafsir_surah_76.json - 30K
+tafsir_json_output/de_tafsir_surah_77.json - 14K
+tafsir_json_output/de_tafsir_surah_78.json - 15K
+tafsir_json_output/de_tafsir_surah_79.json - 15K
+tafsir_json_output/de_tafsir_surah_8.json - 54K
+tafsir_json_output/de_tafsir_surah_80.json - 18K
+tafsir_json_output/de_tafsir_surah_81.json - 21K
+tafsir_json_output/de_tafsir_surah_82.json - 10K
+tafsir_json_output/de_tafsir_surah_83.json - 2.5K
+tafsir_json_output/de_tafsir_surah_84.json - 13K
+tafsir_json_output/de_tafsir_surah_85.json - 13K
+tafsir_json_output/de_tafsir_surah_87.json - 13K
+tafsir_json_output/de_tafsir_surah_88.json - 19K
+tafsir_json_output/de_tafsir_surah_89.json - 14K
+tafsir_json_output/de_tafsir_surah_9.json - 134K
+tafsir_json_output/de_tafsir_surah_90.json - 7.1K
+tafsir_json_output/de_tafsir_surah_91.json - 14K
+tafsir_json_output/de_tafsir_surah_92.json - 9.4K
+tafsir_json_output/de_tafsir_surah_93.json - 5.2K
+tafsir_json_output/de_tafsir_surah_94.json - 8.5K
+tafsir_json_output/de_tafsir_surah_95.json - 11K
+tafsir_json_output/de_tafsir_surah_96.json - 16K
+tafsir_json_output/de_tafsir_surah_98.json - 12K
+
+Complete file:
+tafsir_json_output/de_tafsir_complete.json - 4.9M
