@@ -1,70 +1,70 @@
 # Tafsīr Al-Qur'ān Al-Karīm - JSON Converter
 
-Dieses Repository enthält ein automatisches Konvertierungssystem, das die deutschen Tafsir-Textdateien (Qur'an-Kommentare) in das JSON-Format für Qur'an-Anwendungen umwandelt.
+This repository contains an automated conversion system that transforms the German tafsir text files (Qur'an commentaries) into JSON format for Qur'an applications.
 
-## Über das Werk
+## About the Work
 
-**Titel:** Tafsīr Al-Qur'ān Al-Karīm  
-**Autor:** Abū-r-Riḍā' Muhammad Ibn Ahmad Ibn Rassoul  
-**Verlag:** IB Verlag Islamische Bibliothek  
-**Auflage:** 41. verbesserte und erweiterte Auflage
+**Title:** Tafsīr Al-Qur'ān Al-Karīm  
+**Author:** Abū-r-Riḍā' Muhammad Ibn Ahmad Ibn Rassoul  
+**Publisher:** IB Verlag Islamische Bibliothek  
+**Edition:** 41st revised and expanded edition
 
-### Copyright & Quelle
+### Copyright & Source
 
-Die Vervielfältigung, der Nachdruck und die Übersetzung dieses Werkes in eine Fremdsprache sind erlaubt, wenn dabei auf diese Quelle hingewiesen wird.
+Reproduction, reprinting, and translation of this work into a foreign language are permitted provided that this source is cited.
 
-Quelle: IB Verlag Islamische Bibliothek
+Source: IB Verlag Islamische Bibliothek
 
-PDF-Quelle: https://islamicbulletin.org/de/ebooks/koran/tafsir_al_quran.pdf?vQE5lZNHW=Qry1o4CiDDubD 
+PDF source: [Tafsīr Al-Qur'ān PDF](https://islamicbulletin.org/de/ebooks/koran/tafsir_al_quran.pdf?vQE5lZNHW=Qry1o4CiDDubD)
 
-## Automatische Konvertierung
+## Automatic Conversion
 
-### Mit GitHub Actions
+### With GitHub Actions
 
-Der einfachste Weg, die JSON-Dateien zu generieren:
+The easiest way to generate the JSON files:
 
-1. Gehe zu **Actions** → **Convert Tafsir to JSON**
-2. Klicke auf **Run workflow**
-3. Optional: Aktiviere **Create a GitHub Release** für ein öffentliches Release
-4. Die generierten JSON-Dateien werden als Artifacts (90 Tage Aufbewahrung) hochgeladen
+1. Go to **Actions** → **Convert Tafsir to JSON**
+2. Click **Run workflow**
+3. Optional: Enable **Create a GitHub Release** to publish a public release
+4. The generated JSON files will be uploaded as artifacts (retained for 90 days)
 
-### Lokale Verwendung
+### Local Usage
 
-Voraussetzungen:
-- Python 3.11 oder höher
-- UTF-8 Encoding-Unterstützung
+Requirements:
+- Python 3.11 or later
+- UTF-8 encoding support
 
-Ausführung:
+Run:
 
 ```bash
 python3 convert_tafsir_to_json.py <input_dir> <output_dir>
 ```
 
-Beispiel:
+Example:
 
 ```bash
 python3 convert_tafsir_to_json.py . tafsir_json_output
 ```
 
-## Ausgabe-Dateien
+## Output Files
 
-Das Konvertierungsskript erstellt folgende JSON-Dateien:
+The conversion script creates the following JSON files:
 
-### Einzelne Sura-Dateien
+### Individual Sura Files
 
-- `de_tafsir_surah_1.json` bis `de_tafsir_surah_114.json`
-- Jede Datei enthält die Tafsir-Kommentare für eine einzelne Sura
-- Format: Array von Vers-Objekten
+- `de_tafsir_surah_1.json` through `de_tafsir_surah_114.json`
+- Each file contains the tafsir comments for a single Sura
+- Format: array of verse objects
 
-### Vollständige Datei
+### Complete File
 
 - `de_tafsir_complete.json`
-- Enthält alle Suras und Verse
-- Enthält Metadaten (Autor, Verlag, Gesamtstatistiken)
+- Contains all Suras and verses
+- Includes metadata (author, publisher, overall statistics)
 
-## JSON-Struktur
+## JSON Structure
 
-Jeder Vers hat folgende Struktur:
+Each verse has the following structure:
 
 ```json
 {
@@ -83,51 +83,51 @@ Jeder Vers hat folgende Struktur:
 }
 ```
 
-### HTML-Formatierung
+### HTML Formatting
 
-Der Text wird automatisch in HTML konvertiert:
+The text is automatically converted to HTML:
 
-- **`<h2>`** - Sura-Überschriften
-- **`<p>`** - Absätze
-- **`<strong>`** - Qur'an-Zitate in Anführungszeichen
-- **`<em>`** - Arabische Begriffe mit diakritischen Zeichen
+- `<h2>` - Sura headings
+- `<p>` - Paragraphs
+- `<strong>` - Qur'an quotations (in quotation marks)
+- `<em>` - Arabic terms with diacritical marks
 
-## Funktionen
+## Features
 
-✅ UTF-8 Encoding für alle Dateien  
-✅ Fehlerbehandlung bei fehlenden Textdateien  
-✅ Progress-Ausgabe während der Konvertierung  
-✅ Copyright-Hinweise in JSON-Dateien  
-✅ Automatische HTML-Formatierung  
-✅ Metadaten in vollständiger JSON-Datei  
+- ✅ UTF-8 encoding for all files  
+- ✅ Error handling for missing text files  
+- ✅ Progress output during conversion  
+- ✅ Copyright notices included in JSON files  
+- ✅ Automatic HTML formatting  
+- ✅ Metadata included in the complete JSON file  
 
-## Technische Details
+## Technical Details
 
-### Eingabeformat
+### Input Format
 
-Das Skript verarbeitet `tafsir_al_quran.txt_*.txt` Dateien mit folgendem Format:
+The script processes `tafsir_al_quran.txt_*.txt` files with the following structure:
 
-- Sura-Header: `(Nummer) Sura Name (Deutsche Übersetzung)`
-- Offenbarungsort: `(offenbart zu Makka/Al-Madīna)`
-- Versanzahl: `N Āyāt`
-- Vers-Referenzen: `N:N - Kommentar...`
+- Sura header: `(Number) Sura Name (German translation)`
+- Revelation place: `(revealed in Makka/Al-Madīna)`
+- Verse count: `N Āyāt`
+- Verse references: `N:N - commentary...`
 
-### Konvertierungsprozess
+### Conversion Process
 
-1. Liest alle Textdateien sequenziell
-2. Identifiziert Sura-Header und Metadaten
-3. Extrahiert Vers-Kommentare
-4. Konvertiert Text in HTML
-5. Generiert JSON-Ausgabedateien
+1. Reads all text files sequentially  
+2. Identifies Sura headers and metadata  
+3. Extracts verse commentaries  
+4. Converts text to HTML  
+5. Generates JSON output files
 
-## Lizenz
+## License
 
-Das ursprüngliche Werk unterliegt dem Copyright des Autors und Verlags. Die Nutzung ist gemäß den Lizenzbedingungen des Verlags erlaubt.
+The original work is subject to the copyright of the author and publisher. Use is permitted according to the publisher's licensing terms.
 
-## Kontakt
+## Contact
 
-Für Fragen zum ursprünglichen Werk:  
+For questions about the original work:  
 IB Verlag Islamische Bibliothek
 
-Für technische Fragen zu diesem Konvertierungsskript:  
-Siehe GitHub Issues in diesem Repository
+For technical questions about this conversion script:  
+See the GitHub Issues in this repository
