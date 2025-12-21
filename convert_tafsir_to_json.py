@@ -6,9 +6,8 @@ Converts German Tafsir text files to JSON format for the QuranApp.
 Uses a two-pass approach: 
   Pass 1: Collect explicit Tafsir blocks (verse references at line start)
   Pass 2: Collect inline verses (only if not already found in Pass 1)
-
-Author: Muhammad Ibn Ahmad Ibn Rassoul
-Publisher: IB Verlag Islamische Bibliothek
+Copyright (c) 2025 Mario Herrmann
+Licensed under the MIT License (see LICENSE for details)
 """
 
 import os
@@ -36,7 +35,7 @@ class TafsirConverter:
         self.copyright_info = {
             "author": "Muhammad Ibn Ahmad Ibn Rassoul",
             "publisher":  "IB Verlag Islamische Bibliothek",
-            "edition": "41.  Auflage",
+            "edition": "41. Auflage",
             "title": "Tafsīr Al-Qur'ān Al-Karīm"
         }
         
@@ -441,7 +440,7 @@ class TafsirConverter:
                     full_text = self.format_text_to_html(verse_text)
                 
                 verse_entry = {
-                    "key": "de_tafsir-al-azhar",
+                    "key": "de_tafsir-al-quran",
                     "verse_key": verse_key,
                     "verses": [verse_key],
                     "text": full_text,
@@ -464,7 +463,7 @@ class TafsirConverter:
         # Write complete file with metadata
         complete_data = {
             "metadata": {
-                "key": "de_tafsir-al-azhar",
+                "key": "de_tafsir-al-quran",
                 "name": "Tafsīr Al-Qur'ān Al-Karīm (German)",
                 "author": self.copyright_info['author'],
                 "publisher": self.copyright_info['publisher'],
