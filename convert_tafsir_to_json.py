@@ -440,7 +440,7 @@ class TafsirConverter:
                     full_text = self.format_text_to_html(verse_text)
                 
                 verse_entry = {
-                    "key": "de_tafsir-al-quran",
+                    "key": "de_tafsir-al-quran-al-karim",
                     "verse_key": verse_key,
                     "verses": [verse_key],
                     "text": full_text,
