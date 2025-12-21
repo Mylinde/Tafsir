@@ -7,14 +7,15 @@ Dieses Repository enthält ein automatisches Konvertierungssystem, das die deuts
 **Titel:** Tafsīr Al-Qur'ān Al-Karīm  
 **Autor:** Abū-r-Riḍā' Muhammad Ibn Ahmad Ibn Rassoul  
 **Verlag:** IB Verlag Islamische Bibliothek  
-**Auflage:** 41., verbesserte und erweiterte Auflage
-**Quelle:** https://islamicbulletin.org/de/ebooks/koran/tafsir_al_quran.pdf?vQE5lZNHW=Qry1o4CiDDubD  
+**Auflage:** 41. verbesserte und erweiterte Auflage
 
 ### Copyright & Quelle
 
 Die Vervielfältigung, der Nachdruck und die Übersetzung dieses Werkes in eine Fremdsprache sind erlaubt, wenn dabei auf diese Quelle hingewiesen wird.
 
 Quelle: IB Verlag Islamische Bibliothek
+
+PDF-Quelle: https://islamicbulletin.org/de/ebooks/koran/tafsir_al_quran.pdf?vQE5lZNHW=Qry1o4CiDDubD 
 
 ## Automatische Konvertierung
 
