@@ -68,7 +68,7 @@ Each verse has the following structure:
 
 ```json
 {
-  "key": "de_tafsir-al-azhar",
+  "key": "de_tafsir-al-quran-al-karim",
   "verse_key": "1:1",
   "verses": ["1:1"],
   "text": "<h2>Sura Al-Fātiḥa...</h2><p>...</p>",
