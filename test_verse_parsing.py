@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Teste parse_verse_reference mit der echten Zeile
+Test parse_verse_reference with a real line
 """
 
 import re
 
 def parse_verse_reference(line:  str):
-    """Extrahiere Vers-Referenz(en)."""
-    # Pattern 1: Vers-Bereich (z.B. 114:1-6 -)
+    """Extract verse reference(s)."""
+    # Pattern 1: verse range (e.g., 114:1-6 -)
     range_pattern = r'^(\d+):(\d+)-(\d+)\s*-\s*(. *)$'
     range_match = re.match(range_pattern, line. strip())
     
@@ -20,7 +20,7 @@ def parse_verse_reference(line:  str):
         verse_nums = list(range(verse_start, verse_end + 1))
         return (sura_num, verse_nums, remaining)
     
-    # Pattern 2: Einzelvers (z.B. 2: 1 -)
+    # Pattern 2: single verse (e.g., 2:1 -)
     single_pattern = r'^(\d+):(\d+)\s*-\s*(.*)$'
     single_match = re.match(single_pattern, line.strip())
     
@@ -32,17 +32,17 @@ def parse_verse_reference(line:  str):
     
     return None
 
-# Teste mit der echten Zeile aus Sura 114
-test_line = "114:1-6 - Diese letzte Sura des Qur'ān, eine der beiden sogenannten Schutz-Suren"
+# Test with the real line from Sura 114
+test_line = "114:1-6 - This last Sura of the Qur'an, one of the two so-called protective suras"
 
 result = parse_verse_reference(test_line)
 
 if result:
     sura_num, verse_nums, remaining = result
-    print(f"✓ Erfolgreich geparst:")
+    print(f"✓ Successfully parsed:")
     print(f"  Sura: {sura_num}")
-    print(f"  Verse: {verse_nums}")
-    print(f"  Anzahl Verse: {len(verse_nums)}")
-    print(f"  Remaining: {remaining[: 60]}...")
+    print(f"  Verses: {verse_nums}")
+    print(f"  Number of verses: {len(verse_nums)}")
+    print(f"  Remaining: {remaining[:60]}...")
 else:
-    print("❌ Konnte nicht geparst werden")
+    print("❌ Could not be parsed")
