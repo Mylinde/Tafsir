@@ -1,0 +1,172 @@
+
+
+Verzeichnis der Suren
+nach ihrer numerischen Anordnung
+
+Die linke Zahl vor der Sura nennt die Nummer der Sura, die rechte Zahl gibt die Seitennummer
+an. Die Suren-Namen entsprechen der korrekten Aussprache
+gemäß den Regeln der arabischen Rezitation.
+
+1 Al-Fātiḥa
+
+35
+
+21 Al-Ambiyā’
+
+512
+
+2 Al-Baqara
+
+40
+
+22 Al-Ḥaǧǧ
+
+524
+
+3 Āl-‘Imrān
+
+134
+
+23 Al-Mu’minūn
+
+538
+
+4 An-Nisā’
+
+171
+
+24 An-Nūr
+
+549
+
+5 Al-Mā’ida
+
+212
+
+25 Al-Furqān
+
+568
+
+6 Al-An‘ām
+
+238
+
+26 Aš-Šu‘arā’
+
+579
+
+7 Al-A‘rāf
+
+265
+
+27 An-Naml
+
+595
+
+8 Al-Anfāl
+
+296
+
+28 Al-Qaṣaṣ
+
+612
+
+9 At-Tauba
+
+309
+
+29 Al-‘Ankabūt
+
+625
+
+10 Yūnus
+
+339
+
+30 Ar-Rūm
+
+635
+
+11 Hūd
+
+355
+
+31 Luqmān
+
+647
+
+12 Yūsuf
+
+374
+
+32 As-Saǧda
+
+654
+
+13 Ar-Ra‘d
+
+392
+
+33 Al-Aḥzāb
+
+661
+
+14 Ibrāhīm
+
+401
+
+34 Saba’
+
+681
+
+15 Al-Ḥiǧr
+
+410
+
+35 Fāṭir
+
+690
+
+16 An-Naḥl
+
+421
+
+36 Yā Sīn
+
+699
+
+17 Al-Isrā’
+
+445
+
+37 Aṣ-Ṣāffāt
+
+710
+
+18 Al-Kahf
+
+473
+
+38 Ṣād
+
+720
+
+19 Maryam
+
+489
+
+39 Az-Zumar
+
+728
+
+20 Ṭā Hā
+
+499
+
+40 Ġāfir
+
+740
+
+4
+
+

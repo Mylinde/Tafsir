@@ -1,0 +1,6 @@
+#!/bin/bash
+
+pdftk tafsir.pdf burst &&
+for f in pg_*.pdf; do
+  pdftotext "$f" - | sed "s/Tafsīr Al-Qur’ān Al-Karīm//g" > "${f%.pdf}.txt";
+done && rm pg_*.pdf doc_data.txt

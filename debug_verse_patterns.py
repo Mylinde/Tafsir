@@ -7,7 +7,7 @@ Debug script: Determines why verses are not detected
 import re
 from pathlib import Path
 
-def analyze_verse_patterns(txt_dir:  str, sura_num: int = 11):
+def analyze_verse_patterns(txt_dir:  str, sura_num: int = 20):
     """Analyze verse patterns for a specific sura"""
     txt_path = Path(txt_dir)
     

@@ -8,8 +8,7 @@ import re
 from pathlib import Path
 
 # Missing suras
-MISSING_SURAS = [11, 12, 15, 20, 31, 34, 36, 38, 47, 50, 75, 86, 97, 99, 100, 
-                 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113]
+MISSING_SURAS = [2, 3]
 
 def find_sura_headers(txt_dir:  str):
     """Search for sura headers in the text files"""

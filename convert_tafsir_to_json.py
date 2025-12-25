@@ -41,7 +41,7 @@ class TafsirConverter:
         
     def find_text_files(self) -> List[Path]:
         """Find all tafsir_al_quran.txt_*. txt files."""
-        files = sorted(self.input_dir.glob("tafsir_al_quran.txt_*.txt"),
+        files = sorted(self.input_dir.glob("*.txt"),
                       key=lambda x: int(x.stem.split('_')[-1]))
         print(f"Found {len(files)} text files")
         return files
@@ -435,7 +435,8 @@ class TafsirConverter:
                     vc = f"<p><em>{sura['verse_count']} Āyāt</em></p>"
                     intro_html = self.format_text_to_html(sura['introduction'])
                     verse_html = self.format_text_to_html(verse_text)
-                    full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
+                    #full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
+                    full_text = f"{header}\n{location}\n{vc}\n{verse_html}"
                 else: 
                     full_text = self.format_text_to_html(verse_text)
                 
@@ -487,7 +488,6 @@ def main():
     """Main entry point."""
     if len(sys.argv) != 3:
         print("Usage: python3 convert_tafsir_to_json.py <input_dir> <output_dir>")
-        print("Example: python3 convert_tafsir_to_json. py .  tafsir_json_output")
         sys.exit(1)
     
     input_dir = sys.argv[1]

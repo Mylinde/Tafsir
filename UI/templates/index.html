@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tafsir JSON Viewer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Lokales DOMPurify (sollte unter /static/purify.js liegen) -->
+  <script src="/static/purify.js"></script>
+
+  <!-- Normalisierung: verschiedene Builds von purify.js exportieren unterschiedlich.
+       Dieses kleine Snippet stellt sicher, dass window.DOMPurify verfügbar ist. -->
+  <script>
+    (function() {
+      // Falls bereits vorhanden, nichts tun
+      if (typeof window !== 'undefined' && typeof window.DOMPurify !== 'undefined') {
+        console.info('DOMPurify: global bereits vorhanden.');
+        return;
+      }
+
+      // Manche Builds setzen default export: window.default, oder window.purify, oder window.purifyDefault
+      try {
+        if (typeof window !== 'undefined') {
+          // Prüfe bekannte Varianten
+          if (window.default && typeof window.default.sanitize === 'function') {
+            window.DOMPurify = window.default;
+            console.info('DOMPurify gesetzt von window.default');
+          } else if (window.purify && typeof window.purify.sanitize === 'function') {
+            window.DOMPurify = window.purify;
+            console.info('DOMPurify gesetzt von window.purify');
+          } else if (window.Purify && typeof window.Purify.sanitize === 'function') {
+            window.DOMPurify = window.Purify;
+            console.info('DOMPurify gesetzt von window.Purify');
+          } else if (window.purify_default && typeof window.purify_default.sanitize === 'function') {
+            window.DOMPurify = window.purify_default;
+            console.info('DOMPurify gesetzt von window.purify_default');
+          } else if (typeof window.DOMPurify === 'undefined') {
+            // Falls purify.js ist ein ES-Modul (nicht als global), versuchen wir dynamic import fallback
+            console.info('DOMPurify nicht als global erkannt. Versuche dynamic import fallback...');
+            // Versuche, die lokale Datei als Modul zu importieren (falls der Build ein ESM-Export ist)
+            // Hinweis: in manchen Umgebungen ist dynamic import nicht erlaubt; das catch fängt das ab.
+            import('/static/purify.js').then(mod => {
+              // mod.default ist üblich für ESM UMD builds
+              if (mod && (typeof mod.sanitize === 'function')) {
+                window.DOMPurify = mod;
+                console.info('DOMPurify gesetzt von import (mod)');
+              } else if (mod && mod.default && typeof mod.default.sanitize === 'function') {
+                window.DOMPurify = mod.default;
+                console.info('DOMPurify gesetzt von import (mod.default)');
+              } else {
+                console.warn('DOMPurify importiert, aber kein sanitize gefunden:', mod);
+              }
+            }).catch(err => {
+              console.warn('Dynamic import von /static/purify.js fehlgeschlagen:', err);
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Fehler beim Normalisieren von DOMPurify:', e);
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tafsir JSON Viewer</h1>
+      <p>Verzeichnis: <code>tafsir-json</code></p>
+    </header>
+
+    <main>
+      <aside id="file-list">
+        <input id="filter" placeholder="Dateien filtern (z.B. surah_1)" />
+        <ul id="files" aria-live="polite"></ul>
+      </aside>
+
+      <section id="viewer">
+        <div class="viewer-header">
+          <h2 id="current-filename">Keine Datei ausgewählt</h2>
+          <div class="view-controls" role="tablist" aria-label="Ansicht wechseln">
+            <button id="btn-rendered" class="active" role="tab" aria-selected="true">Gerendert</button>
+            <button id="btn-json" role="tab" aria-selected="false">JSON</button>
+          </div>
+        </div>
+
+        <div id="content">
+          <div id="rendered-view" class="view" aria-live="polite"></div>
+          <pre id="json-pre" class="view" style="display:none" aria-hidden="true"></pre>
+          <div id="warn-dompurify" style="color:#a00; margin-top:8px; display:none;"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <small>Lokaler Server — nicht öffentlich. Große Dateien können etwas länger zum Laden brauchen.</small>
+    </footer>
+  </div>
+
+  <script>
+    // Flag ob DOMPurify verfügbar ist (wird später aktualisiert)
+    let hasDOMPurify = (typeof DOMPurify !== 'undefined');
+
+    function updateDOMPurifyFlag() {
+      hasDOMPurify = (typeof DOMPurify !== 'undefined' && typeof DOMPurify.sanitize === 'function');
+      const warn = document.getElementById('warn-dompurify');
+      if (!hasDOMPurify) {
+        warn.style.display = '';
+        warn.textContent = 'Hinweis: DOMPurify fehlt oder konnte nicht initialisiert werden. HTML-Formatierung wird aus Sicherheitsgründen nicht gerendert.';
+      } else {
+        warn.style.display = 'none';
+        console.info('DOMPurify ist verfügbar.');
+      }
+    }
+
+    // Sofort prüfen (wenn DOMPurify durch obiges Snippet synchron gesetzt wurde)
+    updateDOMPurifyFlag();
+
+    // Restliche App-Funktionen (Dateiliste, laden, anzeigen) — unverändert, aber prüft hasDOMPurify
+    async function loadFiles() {
+      try {
+        const res = await fetch('/api/files');
+        const json = await res.json();
+        const listEl = document.getElementById('files');
+        listEl.innerHTML = '';
+        if (json.files && Array.isArray(json.files)) {
+          json.files.forEach(f => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.href = "#";
+            a.textContent = f;
+            a.addEventListener('click', (e) => {
+              e.preventDefault();
+              loadFile(f);
+            });
+            li.appendChild(a);
+            listEl.appendChild(li);
+          });
+        } else if (json.error) {
+          listEl.textContent = 'Fehler: ' + json.error;
+        } else {
+          listEl.textContent = 'Keine Dateien gefunden.';
+        }
+      } catch (err) {
+        const listEl = document.getElementById('files');
+        listEl.textContent = 'Fehler beim Laden der Dateiliste: ' + err;
+      }
+    }
+
+    function collectTexts(obj, out = []) {
+      if (obj === null || obj === undefined) return out;
+      if (typeof obj === 'string') return out;
+      if (Array.isArray(obj)) {
+        for (const v of obj) collectTexts(v, out);
+        return out;
+      }
+      if (typeof obj === 'object') {
+        for (const k of Object.keys(obj)) {
+          const v = obj[k];
+          if (k.toLowerCase() === 'text' && typeof v === 'string') {
+            out.push(v);
+          } else {
+            collectTexts(v, out);
+          }
+        }
+      }
+      return out;
+    }
+
+    function isHTMLString(s) {
+      return /<[^>]+>/.test(s);
+    }
+
+    function normalizeParagraphText(s) {
+      if (!s || typeof s !== 'string') return [];
+      let p = s.replace(/\r/g, "");
+      p = p.trim();
+      const paras = p.split(/\n{2,}/).map(x => x.replace(/\n/g, ' ').trim()).filter(x => x.length > 0);
+      return paras;
+    }
+
+    function showRendered(texts) {
+      // Aktualisiere Flag, vielleicht wurde DOMPurify via dynamic import gesetzt
+      updateDOMPurifyFlag();
+
+      const rendered = document.getElementById('rendered-view');
+      rendered.innerHTML = '';
+      if (!texts || texts.length === 0) {
+        rendered.textContent = 'Keine "text"-Felder gefunden — wechsle zur JSON-Ansicht.';
+        return;
+      }
+
+      for (const t of texts) {
+        if (isHTMLString(t) && hasDOMPurify) {
+          const allowed = {
+            ALLOWED_TAGS: ['h1','h2','h3','h4','h5','h6','p','em','i','strong','b','u','br','ul','ol','li','sup','sub','span','a'],
+            ALLOWED_ATTR: ['href','title','target']
+          };
+          const safeHtml = DOMPurify.sanitize(t, allowed);
+          const wrapper = document.createElement('div');
+          wrapper.innerHTML = safeHtml;
+          rendered.appendChild(wrapper);
+        } else {
+          const paras = normalizeParagraphText(t.replace(/<[^>]+>/g, ' '));
+          for (const p of paras) {
+            const pEl = document.createElement('p');
+            pEl.textContent = p;
+            rendered.appendChild(pEl);
+          }
+        }
+      }
+    }
+
+    function showJSON(obj) {
+      const pre = document.getElementById('json-pre');
+      try {
+        pre.textContent = JSON.stringify(obj, null, 2);
+      } catch (e) {
+        pre.textContent = String(obj);
+      }
+    }
+
+    function setActiveView(view) {
+      const btnR = document.getElementById('btn-rendered');
+      const btnJ = document.getElementById('btn-json');
+      const renderedView = document.getElementById('rendered-view');
+      const jsonPre = document.getElementById('json-pre');
+
+      if (view === 'rendered') {
+        btnR.classList.add('active'); btnR.setAttribute('aria-selected','true');
+        btnJ.classList.remove('active'); btnJ.setAttribute('aria-selected','false');
+        renderedView.style.display = '';
+        jsonPre.style.display = 'none';
+        jsonPre.setAttribute('aria-hidden','true');
+      } else {
+        btnJ.classList.add('active'); btnJ.setAttribute('aria-selected','true');
+        btnR.classList.remove('active'); btnR.setAttribute('aria-selected','false');
+        renderedView.style.display = 'none';
+        jsonPre.style.display = '';
+        jsonPre.setAttribute('aria-hidden','false');
+      }
+    }
+
+    async function loadFile(filename) {
+      document.getElementById('current-filename').textContent = filename;
+      document.getElementById('rendered-view').textContent = 'Lade...';
+      document.getElementById('json-pre').textContent = 'Lade...';
+      try {
+        const res = await fetch('/api/file/' + encodeURIComponent(filename));
+        const json = await res.json();
+        if (json.content) {
+          const texts = collectTexts(json.content, []);
+          showJSON(json.content);
+          if (texts.length > 0) {
+            showRendered(texts);
+            setActiveView('rendered');
+          } else {
+            document.getElementById('rendered-view').textContent = 'Keine "text"-Felder gefunden.';
+            setActiveView('json');
+          }
+        } else if (json.content_raw) {
+          const raw = json.content_raw;
+          if (isHTMLString(raw) && hasDOMPurify) {
+            const safe = DOMPurify.sanitize(raw);
+            document.getElementById('rendered-view').innerHTML = safe;
+            document.getElementById('json-pre').textContent = raw;
+            setActiveView('rendered');
+          } else {
+            document.getElementById('rendered-view').textContent = raw;
+            document.getElementById('json-pre').textContent = raw;
+            setActiveView('rendered');
+          }
+        } else if (json.error) {
+          document.getElementById('rendered-view').textContent = 'Fehler: ' + json.error;
+          document.getElementById('json-pre').textContent = 'Fehler: ' + json.error;
+          setActiveView('rendered');
+        } else {
+          document.getElementById('rendered-view').textContent = 'Unbekannte Antwort vom Server.';
+          document.getElementById('json-pre').textContent = 'Unbekannte Antwort vom Server.';
+          setActiveView('rendered');
+        }
+      } catch (err) {
+        document.getElementById('rendered-view').textContent = 'Fehler beim Laden: ' + err;
+        document.getElementById('json-pre').textContent = 'Fehler beim Laden: ' + err;
+        setActiveView('rendered');
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Einmal Flag aktualisieren (falls purify.js noch asynchron initialisiert hat)
+      updateDOMPurifyFlag();
+
+      // Falls DOMPurify noch nicht gesetzt ist, versuchen wir kurz, es erneut zu erkennen
+      // after a short timeout (some builds might set globals after script execution)
+      if (!hasDOMPurify) {
+        setTimeout(updateDOMPurifyFlag, 50);
+        setTimeout(updateDOMPurifyFlag, 200);
+      }
+
+      await loadFiles();
+
+      const filter = document.getElementById('filter');
+      filter.addEventListener('input', () => {
+        const q = filter.value.toLowerCase();
+        const items = document.querySelectorAll('#files li');
+        items.forEach(li => {
+          const txt = li.textContent.toLowerCase();
+          li.style.display = txt.includes(q) ? '' : 'none';
+        });
+      });
+
+      document.getElementById('btn-rendered').addEventListener('click', () => setActiveView('rendered'));
+      document.getElementById('btn-json').addEventListener('click', () => setActiveView('json'));
+    });
+  </script>
+</body>
+</html>
