@@ -62,12 +62,14 @@ class TafsirConverter:
         return '\n'.join(all_content)
     
     def format_text_to_html(self, text: str) -> str:
-        """Minimal HTML conversion (paragraph splitting). Removes 'Ende der Sura XXX' and page numbers."""
+        """Minimal HTML conversion (paragraph splitting). Removes 'Ende der Sura XXX', page numbers, and the abbreviation (ÜB)."""
         import re
         # Remove lines like 'Ende der Sura XXX'
         text = re.sub(r'^Ende der Sura\s+\d+\s*$', '', text, flags=re.MULTILINE | re.IGNORECASE)
         # Remove lines that are only page numbers (e.g. '123', '12', etc.)
         text = re.sub(r'^\s*\d+\s*$', '', text, flags=re.MULTILINE)
+        # Remove abbreviation (ÜB) everywhere in the text
+        text = re.sub(r'\(ÜB\)', '', text)
         lines = [l.strip() for l in text.splitlines() if l.strip()]
         paras = []
         buf = []
