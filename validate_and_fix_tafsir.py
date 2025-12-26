@@ -95,9 +95,19 @@ class TafsirValidator:
                 existing_verses = set()
                 for entry in data: 
                     verse_key = entry.get('verse_key', '')
-                    match = re.match(r'(\d+):(\d+)', verse_key)
-                    if match:
-                        existing_verses.add(int(match.group(2)))
+                    if isinstance(verse_key, int):
+                        existing_verses.add(verse_key)
+                    elif isinstance(verse_key, str):
+                        m = re.match(r'(\d+):(\d+)', verse_key)
+                        if m:
+                            existing_verses.add(int(m.group(2)))
+                    elif 'verses' in entry and entry['verses']:
+                        # Fallback: nehme die erste Versnummer aus der Liste
+                        v = entry['verses'][0]
+                        if isinstance(v, str) and ':' in v:
+                            existing_verses.add(int(v.split(':')[1]))
+                        elif isinstance(v, int):
+                            existing_verses.add(v)
                 
                 # Check which verses are missing
                 expected_count = VERSE_COUNTS[sura_num]
