@@ -102,7 +102,7 @@ class TafsirConverter:
         # e.g.  "114:1-6 - Text"
         range_pattern = r'^(\d+):(\d+)-(\d+)\s*[-–]\s*(.+)$'
         range_match = re.match(range_pattern, line_stripped)
-        
+       
         if range_match: 
             sura_num = int(range_match.group(1))
             verse_start = int(range_match.group(2))
@@ -110,7 +110,19 @@ class TafsirConverter:
             remaining = range_match.group(4)
             verse_nums = list(range(verse_start, verse_end + 1))
             return (sura_num, verse_nums, remaining)
-        
+
+        # Pattern 1b: Verse range without dash separator (e.g. "114:1-6 Text")
+        range_pattern_nodash = r'^(\d+):(\d+)-(\d+)\s+(.+)$'
+        range_match_nodash = re.match(range_pattern_nodash, line_stripped)
+
+        if range_match_nodash:
+            sura_num = int(range_match_nodash.group(1))
+            verse_start = int(range_match_nodash.group(2))
+            verse_end = int(range_match_nodash.group(3))
+            remaining = range_match_nodash.group(4)
+            verse_nums = list(range(verse_start, verse_end + 1))
+            return (sura_num, verse_nums, remaining)
+                
         # Pattern 2: Single verse with dash separator
         # e.g.  "2:1 - Text" (flexible whitespace)
         single_with_dash = r'^(\d+):(\d+)\s*[-–]\s*(.+)$'
@@ -337,22 +349,7 @@ class TafsirConverter:
                             break
                         current_buffer.append(lines[k])
                         k += 1
-                    # Korrigiert: Schreibe den Kommentartext für alle Verse im Bereich!
-                    text_blob = "\n".join(current_buffer).strip()
-                    html = self.format_text_to_html(text_blob)
-                    sura_obj = suras.setdefault(current_sura_num, {
-                        "number": current_sura_num,
-                        "name": "",
-                        "translation": "",
-                        "location": "",
-                        "verse_count": 0,
-                        "introduction": "",
-                        "verses": {}
-                    })
-                    for v in current_verse_list:
-                        sura_obj["verses"][v] = html
-                    current_buffer = []
-                    current_verse_list = []
+                    flush_current()
                     i = k
                     continue
 
