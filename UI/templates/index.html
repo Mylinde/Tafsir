@@ -123,6 +123,12 @@
         const listEl = document.getElementById('files');
         listEl.innerHTML = '';
         if (json.files && Array.isArray(json.files)) {
+          json.files.sort(function(a, b) {
+            // Extrahiere die erste Zahl aus dem Dateinamen
+            const numA = parseInt(a.match(/\d+/));
+            const numB = parseInt(b.match(/\d+/));
+            return numA - numB;
+          });
           json.files.forEach(f => {
             const li = document.createElement('li');
             const a = document.createElement('a');

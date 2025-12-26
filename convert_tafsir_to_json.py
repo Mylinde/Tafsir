@@ -41,7 +41,7 @@ class TafsirConverter:
         
     def find_text_files(self) -> List[Path]:
         """Find all tafsir_al_quran.txt_*. txt files."""
-        files = sorted(self.input_dir.glob("*.txt"),
+        files = sorted(self.input_dir.glob("pg_*.txt"),
                       key=lambda x: int(x.stem.split('_')[-1]))
         print(f"Found {len(files)} text files")
         return files
@@ -62,51 +62,26 @@ class TafsirConverter:
         return '\n'.join(all_content)
     
     def format_text_to_html(self, text: str) -> str:
-        """
-        Convert text to HTML with proper formatting.
-        - Qur'an quotes in quotation marks become <strong>
-        - Arabic terms (with diacritics) become <em>
-        - Paragraphs become <p>
-        """
-        # Split into paragraphs
-        paragraphs = []
-        lines = text.strip().split('\n')
-        current_para = []
-        
-        for line in lines:
-            line = line.strip()
-            # Skip empty lines and page numbers
-            if not line or re.match(r'^\d+$', line):
-                if current_para:
-                    paragraphs.append(' '.join(current_para))
-                    current_para = []
-            # Skip header lines
-            elif line.startswith("Tafsīr Al-Qur'ān Al-Karīm"):
-                continue
+        """Minimal HTML conversion (paragraph splitting). Removes 'Ende der Sura XXX' and page numbers."""
+        import re
+        # Remove lines like 'Ende der Sura XXX'
+        text = re.sub(r'^Ende der Sura\s+\d+\s*$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+        # Remove lines that are only page numbers (e.g. '123', '12', etc.)
+        text = re.sub(r'^\s*\d+\s*$', '', text, flags=re.MULTILINE)
+        lines = [l.strip() for l in text.splitlines() if l.strip()]
+        paras = []
+        buf = []
+        for l in lines:
+            if not l:
+                if buf:
+                    paras.append(" ".join(buf).strip())
+                    buf = []
             else:
-                current_para.append(line)
-        
-        if current_para:
-            paragraphs.append(' '.join(current_para))
-        
-        # Format each paragraph
-        html_parts = []
-        for para in paragraphs:
-            # Format quoted text as <strong>
-            para = re.sub(r'"([^"]+)"', r'<strong>"\1"</strong>', para)
-            
-            # Format Arabic terms with diacritics as <em>
-            def replace_arabic(match):
-                word = match.group(0)
-                if any(c in word for c in self.ARABIC_DIACRITICS):
-                    return f'<em>{word}</em>'
-                return word
-            
-            para = re.sub(r'\b' + self.ARABIC_CHAR_CLASS + r'\b', replace_arabic, para)
-            
-            html_parts.append(f'<p>{para}</p>')
-        
-        return '\n'.join(html_parts)
+                buf.append(l)
+        if buf:
+            paras.append(" ".join(buf).strip())
+        html = "\n".join(f"<p>{p}</p>" for p in paras)
+        return html
     
     def parse_verse_reference(self, line: str) -> Optional[Tuple[int, List[int], str]]:
         """
@@ -160,17 +135,6 @@ class TafsirConverter:
             if len(remaining) > 20: 
                 return (sura_num, [verse_num], remaining)
         
-        # Pattern 4: Single verse in parentheses at line start
-        # e.g.  "(67:12) Text"
-        parenthesis_pattern = r'^\((\d+):(\d+)\)\s*(.*)$'
-        paren_match = re.match(parenthesis_pattern, line_stripped)
-        
-        if paren_match:
-            sura_num = int(paren_match.group(1))
-            verse_num = int(paren_match.group(2))
-            remaining = paren_match. group(3)
-            return (sura_num, [verse_num], remaining)
-        
         return None
     
     def extract_inline_verses(self, line:  str, current_sura_num: int) -> List[int]:
@@ -193,218 +157,211 @@ class TafsirConverter:
         
         return verses
     
-    def process_content(self) -> Dict[int, Dict]: 
-        """Process all content and extract Sura and verse data using two-pass approach."""
-        content = self.read_all_content()
-        lines = content.split('\n')
-        
-        print("\n" + "="*70)
-        print("PASS 1: Extracting Sura metadata and explicit Tafsir blocks")
-        print("="*70 + "\n")
-        
-        # Patterns for Sura headers
-        sura_pattern_with_trans = r'^\((\d+)\)\s+Sura\s+(. +? )\s+\(([^\)]+)\)\.* $'
-        sura_pattern_no_trans_dots = r'^\((\d+)\)\s+Sura\s+([^\.  ]+)\.{3}'
-        sura_pattern_no_trans = r'^\((\d+)\)\s+Sura\s+([^\n\(]+)'
-        
-        location_pattern = r'^\(offenbart zu (Makka|Al-Madīna)\)'
-        verses_pattern = r'^(\d+)\s+[AĀ].*?y.*?[aā].*?t'
-        
-        suras = {}
-        current_sura = None
-        
-        # PASS 1: Collect Suras and explicit Tafsir blocks
+    def process_content(self) -> Dict[int, Dict]:
+        """Parse combined text and build sura -> verses mapping."""
+        import re
+        text = self.read_all_content()
+        lines = text.splitlines()
+
+        # Robustes Pattern für Sura-Header mit optionaler Übersetzung
+        sura_header_regex = re.compile(
+            r'^\((\d{1,3})\)\s*(?:Sura\s*)?([^\(]+?)(?:\s*\(([^)]+)\))?\s*$', re.IGNORECASE
+        )
+        sura_number_only = re.compile(r'^\((\d{1,3})\)\s*$')
+        location_pattern = re.compile(r'^\(offenbart zu (Makka|Al-Madīna)\)', re.IGNORECASE)
+        verses_pattern = re.compile(r'^(\d+)\s+[AĀa].*?y.*?[aā]')
+        end_of_sura_pattern = re.compile(r'^Ende der Sura\s+\d+', re.IGNORECASE)
+        explicit_verse_ref_pattern = re.compile(r'^\d{1,3}:\d{1,3}([\-–—]\d{1,3})?\b')
+
+        suras: Dict[int, Dict] = {}
+        current_sura_num: Optional[int] = None
+        current_buffer: List[str] = []
+        current_verse_list: List[int] = []
+
+        def flush_current():
+            nonlocal current_buffer, current_verse_list, current_sura_num
+            if current_sura_num is None or not current_verse_list:
+                current_buffer = []
+                current_verse_list = []
+                return
+            text_blob = "\n".join(current_buffer).strip()
+            if not text_blob:
+                current_buffer = []
+                current_verse_list = []
+                return
+            html = self.format_text_to_html(text_blob)
+            sura_obj = suras.setdefault(current_sura_num, {
+                "number": current_sura_num,
+                "name": "",
+                "translation": "",
+                "location": "",
+                "verse_count": 0,
+                "introduction": "",
+                "verses": {}
+            })
+            for v in current_verse_list:
+                if v not in sura_obj["verses"]:
+                    sura_obj["verses"][v] = html
+            current_buffer = []
+            current_verse_list = []
+
         i = 0
         while i < len(lines):
-            line = lines[i].strip()
-            
-            # Check for Sura header
-            sura_match = None
-            has_translation = False
-            
-            sura_match = re.match(sura_pattern_with_trans, line)
-            if sura_match:
-                has_translation = True
-            else:
-                sura_match = re.match(sura_pattern_no_trans_dots, line)
-                if not sura_match:
-                    sura_match = re.match(sura_pattern_no_trans, line)
-            
-            if sura_match:
-                sura_num = int(sura_match.group(1))
-                
-                if sura_num not in suras:
-                    sura_name = sura_match.group(2).strip().rstrip('. ')
-                    
-                    if has_translation and len(sura_match.groups()) >= 3:
-                        translation = sura_match.group(3).strip()
-                    else:
-                        translation = ""
-                    
-                    # Look ahead for location and verse count
-                    location = "Unknown"
-                    verse_count = 0
-                    intro_start = i + 1
-                    
-                    for j in range(i + 1, min(i + 10, len(lines))):
-                        loc_match = re.match(location_pattern, lines[j].strip())
-                        if loc_match:
-                            location = loc_match.group(1)
-                        
-                        vc_match = re.match(verses_pattern, lines[j].strip())
-                        if vc_match:
-                            verse_count = int(vc_match. group(1))
-                            intro_start = j + 1
-                            break
-                    
-                    # Collect introduction (text until first verse reference)
-                    intro_lines = []
-                    for j in range(intro_start, len(lines)):
-                        if self.parse_verse_reference(lines[j].strip()):
-                            break
-                        intro_lines.append(lines[j])
-                    
-                    current_sura = {
-                        'number': sura_num,
-                        'name': sura_name,
-                        'translation': translation,
-                        'location': location,
-                        'verse_count': verse_count,
-                        'introduction': '\n'.join(intro_lines).strip(),
-                        'verses': {}
-                    }
-                    suras[sura_num] = current_sura
-                    
-                    if translation:
-                        print(f"Found Sura {sura_num}:  {sura_name} ({translation})")
-                    else: 
-                        print(f"Found Sura {sura_num}:  {sura_name}")
-            
-            # Check for explicit verse reference at line start
-            verse_ref = self.parse_verse_reference(line)
-            if verse_ref and current_sura:
-                sura_n, verse_nums, remaining = verse_ref
-                
-                if sura_n == current_sura['number']: 
-                    # Collect content until next verse or Sura
-                    verse_content = [remaining] if remaining else []
-                    
-                    j = i + 1
-                    while j < len(lines):
-                        next_line = lines[j].strip()
-                        
-                        # Stop at next verse
+            raw = lines[i]
+            line = raw.strip()
+
+            # Sura-Header mit optionaler Übersetzung
+            mh = sura_header_regex.match(line)
+            if mh:
+                flush_current()
+                current_sura_num = int(mh.group(1))
+                name = (mh.group(2) or "").strip().rstrip('.')
+                trans = (mh.group(3) or "").strip()
+                loc = "Unknown"
+                vc = 0
+                intro_start = i + 1
+                for j in range(i + 1, min(i + 12, len(lines))):
+                    lm = location_pattern.match(lines[j].strip())
+                    if lm:
+                        loc = lm.group(1)
+                    vm = verses_pattern.match(lines[j].strip())
+                    if vm:
+                        try:
+                            vc = int(vm.group(1))
+                        except Exception:
+                            vc = 0
+                        intro_start = j + 1
+                        break
+                suras.setdefault(current_sura_num, {
+                    "number": current_sura_num,
+                    "name": name,
+                    "translation": trans,
+                    "location": loc,
+                    "verse_count": vc,
+                    "introduction": "",
+                    "verses": {}
+                })
+                intro_lines = []
+                for j in range(intro_start, len(lines)):
+                    if self.parse_verse_reference(lines[j].strip()):
+                        break
+                    intro_lines.append(lines[j])
+                suras[current_sura_num]["introduction"] = "\n".join(l.strip() for l in intro_lines).strip()
+                i = max(i, intro_start - 1)
+                i += 1
+                continue
+
+            # Nur Sura-Nummer
+            mn = sura_number_only.match(line)
+            if mn:
+                flush_current()
+                current_sura_num = int(mn.group(1))
+                name = ""
+                trans = ""
+                intro_start = i + 1
+                for j in range(i + 1, min(i + 8, len(lines))):
+                    nline = lines[j].strip()
+                    m2 = sura_header_regex.match(nline)
+                    if m2:
+                        name = (m2.group(2) or "").strip().rstrip('.')
+                        trans = (m2.group(3) or "").strip()
+                        intro_start = j + 1
+                        break
+                    m3 = re.match(r'^[Ss]ura\s+(.+?)(?:\s*\(([^)]+)\))?\s*$', nline)
+                    if m3:
+                        name = m3.group(1).strip().rstrip('.')
+                        trans = (m3.group(2) or "").strip()
+                        intro_start = j + 1
+                        break
+                loc = "Unknown"
+                vc = 0
+                for j in range(intro_start, min(i + 14, len(lines))):
+                    lm = location_pattern.match(lines[j].strip())
+                    if lm:
+                        loc = lm.group(1)
+                    vm = verses_pattern.match(lines[j].strip())
+                    if vm:
+                        try:
+                            vc = int(vm.group(1))
+                        except Exception:
+                            vc = 0
+                        intro_start = j + 1
+                        break
+                suras.setdefault(current_sura_num, {
+                    "number": current_sura_num,
+                    "name": name,
+                    "translation": trans,
+                    "location": loc,
+                    "verse_count": vc,
+                    "introduction": "",
+                    "verses": {}
+                })
+                intro_lines = []
+                for j in range(intro_start, len(lines)):
+                    if self.parse_verse_reference(lines[j].strip()):
+                        break
+                    intro_lines.append(lines[j])
+                suras[current_sura_num]["introduction"] = "\n".join(l.strip() for l in intro_lines).strip()
+                i = max(i, intro_start - 1)
+                i += 1
+                continue
+
+            # Ende der Sura
+            if end_of_sura_pattern.match(line):
+                flush_current()
+                current_verse_list = []
+                current_buffer = []
+                i += 1
+                continue
+
+            # Explizite Versreferenz am Zeilenanfang
+            if explicit_verse_ref_pattern.match(line):
+                flush_current()
+                pv = self.parse_verse_reference(line)
+                if pv:
+                    sura_num, verses, trailing = pv
+                    if current_sura_num is None:
+                        current_sura_num = sura_num
+                    current_verse_list = verses
+                    current_buffer = []
+                    if trailing:
+                        current_buffer.append(trailing)
+                    k = i + 1
+                    while k < len(lines):
+                        next_line = lines[k].strip()
                         if self.parse_verse_reference(next_line):
                             break
-                        
-                        # Stop at new Sura
-                        if re.match(sura_pattern_with_trans, next_line) or \
-                           re.match(sura_pattern_no_trans_dots, next_line) or \
-                           re.match(sura_pattern_no_trans, next_line):
+                        if sura_header_regex.match(next_line):
                             break
-                        
-                        if next_line: 
-                            verse_content.append(next_line)
-                        
-                        j += 1
-                    
-                    # Store for ALL verses in range
-                    verse_text = '\n'.join(verse_content).strip()
-                    for v_num in verse_nums:
-                        verse_key = f"{current_sura['number']}:{v_num}"
-                        current_sura['verses'][verse_key] = verse_text
-                        print(f"  → Verse {verse_key} stored (explicit Tafsir)")
-                else:
-                    # Switch to new Sura
-                    if sura_n in suras:
-                        current_sura = suras[sura_n]
-            
-            i += 1
-        
-        # PASS 2: Collect inline verses (only if not already found)
-        print("\n" + "="*70)
-        print("PASS 2: Collecting inline verses")
-        print("="*70 + "\n")
-        
-        current_sura = None
-        i = 0
-        
-        while i < len(lines):
-            line = lines[i]. strip()
-            
-            # Track current Sura
-            sura_match = re.match(sura_pattern_with_trans, line) or \
-                        re.match(sura_pattern_no_trans_dots, line) or \
-                        re. match(sura_pattern_no_trans, line)
-            
-            if sura_match: 
-                sura_num = int(sura_match.group(1))
-                if sura_num in suras:
-                    current_sura = suras[sura_num]
-            
-            # Check for inline verses
-            if current_sura: 
-                inline_verses = self.extract_inline_verses(line, current_sura['number'])
-                
-                if inline_verses:
-                    # Search for Tafsir block in next lines
-                    tafsir_found = False
-                    
-                    for j in range(i, min(i + 30, len(lines))):
-                        next_line = lines[j].strip()
-                        
-                        # Search for Tafsir pattern:  SURA:VERS-VERS or SURA:VERS
-                        for verse_num in inline_verses:
-                            tafsir_patterns = [
-                                rf'^{current_sura["number"]}:{verse_num}-\d+\s*-',
-                                rf'^{current_sura["number"]}:{verse_num}\s*-',
-                            ]
-                            
-                            for tafsir_pattern in tafsir_patterns:
-                                if re.match(tafsir_pattern, next_line):
-                                    # Found Tafsir!  Collect until next verse
-                                    tafsir_content = []
-                                    for k in range(j, len(lines)):
-                                        # Stop at next verse block
-                                        if k > j and re.match(r'^\d+:\d+', lines[k]. strip()):
-                                            break
-                                        tafsir_content.append(lines[k])
-                                    
-                                    tafsir_text = '\n'.join(tafsir_content).strip()
-                                    
-                                    # Store for ALL inline verses (only if not already present)
-                                    for v_num in inline_verses:
-                                        verse_key = f"{current_sura['number']}:{v_num}"
-                                        if verse_key not in current_sura['verses']:
-                                            current_sura['verses'][verse_key] = tafsir_text
-                                            print(f"  → Inline verse {verse_key} stored (with Tafsir)")
-                                    
-                                    tafsir_found = True
-                                    break
-                            
-                            if tafsir_found:
-                                break
-                        
-                        if tafsir_found: 
+                        if end_of_sura_pattern.match(next_line):
                             break
-                    
-                    # No specific Tafsir found - use context
-                    if not tafsir_found:
-                        context_lines = []
-                        for j in range(max(0, i-1), min(i+5, len(lines))):
-                            if lines[j].strip():
-                                context_lines.append(lines[j])
-                        
-                        context_text = '\n'.join(context_lines).strip()
-                        
-                        for v_num in inline_verses: 
-                            verse_key = f"{current_sura['number']}:{v_num}"
-                            if verse_key not in current_sura['verses']:
-                                current_sura['verses'][verse_key] = context_text
-                                print(f"  → Inline verse {verse_key} stored (with context)")
-            
+                        current_buffer.append(lines[k])
+                        k += 1
+                    # Korrigiert: Schreibe den Kommentartext für alle Verse im Bereich!
+                    text_blob = "\n".join(current_buffer).strip()
+                    html = self.format_text_to_html(text_blob)
+                    sura_obj = suras.setdefault(current_sura_num, {
+                        "number": current_sura_num,
+                        "name": "",
+                        "translation": "",
+                        "location": "",
+                        "verse_count": 0,
+                        "introduction": "",
+                        "verses": {}
+                    })
+                    for v in current_verse_list:
+                        sura_obj["verses"][v] = html
+                    current_buffer = []
+                    current_verse_list = []
+                    i = k
+                    continue
+
+            # Sonst: Text ggf. zum aktuellen Vers sammeln
+            if current_verse_list:
+                current_buffer.append(raw)
             i += 1
-        
+
+        flush_current()
         return suras
     
     def generate_json_output(self, suras:  Dict[int, Dict]):
@@ -416,8 +373,17 @@ class TafsirConverter:
             sura = suras[sura_num]
             sura_verses = []
             
-            verse_keys = sorted(sura['verses'].keys(),
-                              key=lambda x:  int(x.split(':')[1]))
+            def verse_key_sorter(x):
+                if isinstance(x, int):
+                    return x
+                if isinstance(x, str) and ':' in x:
+                    return int(x.split(':')[1])
+                try:
+                    return int(x)
+                except Exception:
+                    return 0
+
+            verse_keys = sorted(sura['verses'].keys(), key=verse_key_sorter)
             
             print(f"\n→ Sura {sura_num}:  {len(verse_keys)} verses found")
             
@@ -435,8 +401,7 @@ class TafsirConverter:
                     vc = f"<p><em>{sura['verse_count']} Āyāt</em></p>"
                     intro_html = self.format_text_to_html(sura['introduction'])
                     verse_html = self.format_text_to_html(verse_text)
-                    #full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
-                    full_text = f"{header}\n{location}\n{vc}\n{verse_html}"
+                    full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
                 else: 
                     full_text = self.format_text_to_html(verse_text)
                 
@@ -488,6 +453,7 @@ def main():
     """Main entry point."""
     if len(sys.argv) != 3:
         print("Usage: python3 convert_tafsir_to_json.py <input_dir> <output_dir>")
+        print("Example: python3 convert_tafsir_to_json. py .  tafsir_json_output")
         sys.exit(1)
     
     input_dir = sys.argv[1]
