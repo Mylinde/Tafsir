@@ -61,34 +61,27 @@ class TafsirConverter:
         
         return '\n'.join(all_content)
     
-    def remove_end_of_sura_markers(self, text: str) -> str:
-        """Remove lines like 'Ende der Sura ...' or 'Ende der Sure ...' from text,
-        but do NOT remove lines that contain verse references like '2:1' or '2:1-3'."""
-        if not text:
-            return text
+    def line_starts_with_verse_reference(self, ln: str) -> bool:
+        """True wenn die Zeile mit einer Verse-Angabe wie '2:1', '(2:1)' oder '2:1-3' beginnt."""
+        if not ln:
+            return False
+        s = ln.lstrip()
+        return bool(re.match(r'^\(?\s*\d{1,3}\s*:\s*\d{1,3}', s))
 
-        def contains_verse_reference(s: str) -> bool:
-            # matches "12:3" or "12:3-5" anywhere in the line
-            return bool(re.search(r'\b\d+:\d+(?:-\d+)?\b', s))
+    def line_starts_with_sura_header(self, ln: str) -> bool:
+        """True wenn die Zeile mit dem expliziten Sura-Header '(Nummer) Sura' beginnt (auch Führungs-(...) zulässig)."""
+        if not ln:
+            return False
+        s = ln.lstrip()
+        # erlaubt führende Klammergruppen vor "(Nummer) Sura ..."
+        return bool(re.match(r'^(?:\([^\)]*\)\s*)*\(\s*\d{1,3}\s*\)\s+Sura\b', s, re.IGNORECASE))
 
-        lines = text.splitlines()
-        filtered = []
-        for ln in lines:
-            # only remove pure "Ende der Sura/Sure ..." lines that do NOT contain verse refs
-            if re.match(r'^\s*Ende\s+der\s+Su(?:ra|re)\b', ln, re.IGNORECASE) and not contains_verse_reference(ln):
-                continue
-            filtered.append(ln)
-        return '\n'.join(filtered)
-
-    def remove_t_markers(self, text: str) -> str:
-        """Remove occurrences of '(t)' (case-insensitive) from text and normalize spaces."""
-        if not text:
-            return text
-        # remove any (t) with optional spaces inside parentheses, case-insensitive
-        s = re.sub(r'\s*\(\s*t\s*\)\s*', ' ', text, flags=re.IGNORECASE)
-        # collapse multiple spaces and trim
-        s = re.sub(r'\s{2,}', ' ', s)
-        return s.strip()
+    def is_end_of_sura_line(self, ln: str) -> bool:
+        """Robuste Prüfung auf 'Ende der Sura (Nummer)' oder 'Ende der Sure (Nummer)'."""
+        if not ln:
+            return False
+        s = ln.strip()
+        return bool(re.search(r'Ende\s+der\s+Su(?:ra|re)\b[^\d\n\r]*?(\d{1,3})?', s, re.IGNORECASE))
     
     def format_text_to_html(self, text: str) -> str:
         """
@@ -97,8 +90,6 @@ class TafsirConverter:
         - Arabic terms (with diacritics) become <em>
         - Paragraphs become <p>
         """
-        text = self.remove_end_of_sura_markers(text)
-        text = self.remove_t_markers(text)
         # Split into paragraphs
         paragraphs = []
         lines = text.strip().split('\n')
@@ -244,8 +235,6 @@ class TafsirConverter:
         # Patterns for Sura headers
         # single, robust pattern: captures optional translation in group 3
         sura_pattern = r'^\((\d+)\)\s+Sura\s+(.+?)(?:\s+\(([^)]+)\))?\.*$'
-        
-        
         location_pattern = r'^\(offenbart zu (Makka|Al-Madīna)\)'
         verses_pattern = r'^(\d+)\s+[AĀ].*?y.*?[aā].*?t'
         
@@ -304,7 +293,7 @@ class TafsirConverter:
                         'translation': translation,
                         'location': location,
                         'verse_count': verse_count,
-                        'introduction': self.remove_t_markers(self.remove_end_of_sura_markers('\n'.join(intro_lines).strip())),
+                        'introduction': ('\n'.join(intro_lines).strip()),
                         'verses': {}
                     }
                     suras[sura_num] = current_sura
@@ -345,7 +334,7 @@ class TafsirConverter:
                         j += 1
                     
                     # Store for ALL verses in range
-                    verse_text = self.remove_t_markers(self.remove_end_of_sura_markers('\n'.join(verse_content).strip()))
+                    verse_text = ('\n'.join(verse_content).strip())
                     for v_num in verse_nums:
                          verse_key = f"{current_sura['number']}:{v_num}"
                          current_sura['verses'][verse_key] = verse_text
@@ -407,7 +396,7 @@ class TafsirConverter:
                                             continue
                                         tafsir_content.append(lines[k])
                                     
-                                    tafsir_text = self.remove_t_markers(self.remove_end_of_sura_markers('\n'.join(tafsir_content).strip()))
+                                    tafsir_text = ('\n'.join(tafsir_content).strip())
                                     
                                     # Store for ALL inline verses (only if not already present)
                                     for v_num in inline_verses:
@@ -436,7 +425,7 @@ class TafsirConverter:
                                 continue
                             context_lines.append(lines[j])
                         
-                        context_text = self.remove_t_markers(self.remove_end_of_sura_markers('\n'.join(context_lines).strip()))
+                        context_text = ('\n'.join(context_lines).strip())
                         
                         for v_num in inline_verses: 
                             verse_key = f"{current_sura['number']}:{v_num}"
