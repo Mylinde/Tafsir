@@ -62,22 +62,22 @@ class TafsirConverter:
         return '\n'.join(all_content)
     
     def line_starts_with_verse_reference(self, ln: str) -> bool:
-        """True wenn die Zeile mit einer Verse-Angabe wie '2:1', '(2:1)' oder '2:1-3' beginnt."""
+        """Return True when the line starts with a verse reference like '2:1', '(2:1)', or '2:1-3'."""
         if not ln:
             return False
         s = ln.lstrip()
         return bool(re.match(r'^\(?\s*\d{1,3}\s*:\s*\d{1,3}', s))
 
     def line_starts_with_sura_header(self, ln: str) -> bool:
-        """True wenn die Zeile mit dem expliziten Sura-Header '(Nummer) Sura' beginnt (auch Führungs-(...) zulässig)."""
+        """Return True when the line starts with the explicit Sura header '(Number) Sura' (allow leading (...) groups)."""
         if not ln:
             return False
         s = ln.lstrip()
-        # erlaubt führende Klammergruppen vor "(Nummer) Sura ..."
+        # allow leading parenthesized groups before "(Number) Sura ..."
         return bool(re.match(r'^(?:\([^\)]*\)\s*)*\(\s*\d{1,3}\s*\)\s+Sura\b', s, re.IGNORECASE))
 
     def is_end_of_sura_line(self, ln: str) -> bool:
-        """Robuste Prüfung auf 'Ende der Sura (Nummer)' oder 'Ende der Sure (Nummer)'."""
+        """Robust check for lines like 'Ende der Sura (Number)' or 'Ende der Sure (Number)' (case-insensitive)."""
         if not ln:
             return False
         s = ln.strip()
@@ -182,7 +182,7 @@ class TafsirConverter:
                 return (sura_num, [verse_num], remaining)
         
         # Pattern 4: Parenthesized verse at line start.
-        # Do NOT treat "(2:3)," or "(2:3)." or "(2:3), und (2:4)" as block headers.
+        # Do NOT treat "(2:3)," or "(2:3)." or "(2:3), and (2:4)" as block headers.
         parenthesis_pattern = r'^\((\d+):(\d+)\)\s*(.*)$'
         paren_match = re.match(parenthesis_pattern, line_stripped)
         if paren_match:
@@ -282,9 +282,9 @@ class TafsirConverter:
                     for j in range(intro_start, len(lines)):
                         if self.parse_verse_reference(lines[j].strip()):
                             break
-                        # skip "Ende der Sura/Sure ..." lines unless sie enthalten Verse refs
+                        # skip "Ende der Sura/Sure ..." lines unless they contain verse refs
                         if self.is_end_of_sura_line(lines[j]):
-                            # falls die Zeile eine Verse-Angabe am Anfang enthält -> behalten
+                            # if the line contains a verse reference at the start -> keep it
                             if self.line_starts_with_verse_reference(lines[j]) or self.line_starts_with_sura_header(lines[j]):
                                 pass
                             else:
@@ -331,7 +331,7 @@ class TafsirConverter:
                         
                         # skip "Ende der Sura/Sure ..." lines
                         if self.is_end_of_sura_line(lines[j]):
-                            # falls die Zeile eine Verse-Angabe am Anfang enthält -> behalten
+                            # if the line contains a verse reference at the start -> keep it
                             if self.line_starts_with_verse_reference(lines[j]) or self.line_starts_with_sura_header(lines[j]):
                                 pass
                             else:

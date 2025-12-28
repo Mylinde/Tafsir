@@ -1,13 +1,14 @@
 #!/bin/bash
 
-pdftk tafsir.pdf cat 35-1009 output temporaer.pdf &&
-pdftk temporaer.pdf burst &&
+pdftk tafsir.pdf cat 35-1009 output temp.pdf &&
+pdftk temp.pdf burst &&
 for f in pg_*.pdf; do
   pdftotext -layout "$f" - | 
     sed "s/Tafsīr Al-Qur’ān Al-Karīm//g" |
     sed -E 's/\(\s*[ÜüUu]\s*[Bb]\s*\)//g' |
+    sed -E 's/\(\s*[tT]\s*\)//g' |
     grep -v '^[[:space:]]*[0-9][0-9]*[[:space:]]*$' |
     awk 'NF{p=1} p' | awk '{print $0} END{if(NR>0) print ""}' > "${f%.pdf}.txt"
-  sed -i ':a;/^\n*$/{$d;N;ba}' "${f%.pdf}.txt"
+    sed -i ':a;/^\n*$/{$d;N;ba}' "${f%.pdf}.txt"
 done &&
-rm pg_*.pdf doc_data.txt temporaer.pdf
+rm pg_*.pdf doc_data.txt temp.pdf
