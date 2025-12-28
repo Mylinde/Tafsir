@@ -282,9 +282,14 @@ class TafsirConverter:
                     for j in range(intro_start, len(lines)):
                         if self.parse_verse_reference(lines[j].strip()):
                             break
-                        # skip "Ende der Sura/Sure ..." lines unless they contain verse refs
-                        if re.match(r'^\s*Ende\s+der\s+Su(?:ra|re)\b', lines[j], re.IGNORECASE) and not re.search(r'\b\d+:\d+(?:-\d+)?\b', lines[j]):
-                            continue
+                        # skip "Ende der Sura/Sure ..." lines unless sie enthalten Verse refs
+                        if self.is_end_of_sura_line(lines[j]):
+                            # falls die Zeile eine Verse-Angabe am Anfang enthält -> behalten
+                            if self.line_starts_with_verse_reference(lines[j]) or self.line_starts_with_sura_header(lines[j]):
+                                pass
+                            else:
+                                j += 1
+                                continue
                         intro_lines.append(lines[j])
                     
                     current_sura = {
@@ -325,9 +330,13 @@ class TafsirConverter:
                             break
                         
                         # skip "Ende der Sura/Sure ..." lines
-                        if re.match(r'^\s*Ende\s+der\s+Su(?:ra|re)\b', lines[j], re.IGNORECASE) and not re.search(r'\b\d+:\d+(?:-\d+)?\b', lines[j]):
-                            j += 1
-                            continue
+                        if self.is_end_of_sura_line(lines[j]):
+                            # falls die Zeile eine Verse-Angabe am Anfang enthält -> behalten
+                            if self.line_starts_with_verse_reference(lines[j]) or self.line_starts_with_sura_header(lines[j]):
+                                pass
+                            else:
+                                j += 1
+                                continue
                         if next_line: 
                             verse_content.append(next_line)
                         
