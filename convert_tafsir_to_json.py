@@ -80,7 +80,6 @@ class TafsirConverter:
                 buf.append(l)
         if buf:
             paras.append(" ".join(buf).strip())
-        html = "\n".join(f"<p>{p}</p>" for p in paras)
         
         # Format each paragraph
         html_parts = []
@@ -100,7 +99,7 @@ class TafsirConverter:
             html_parts.append(f'<p>{para}</p>')
         
         return '\n'.join(html_parts)
-    
+        
     def parse_verse_reference(self, line: str) -> Optional[Tuple[int, List[int], str]]:
         """
         Extract verse reference at line start. 
@@ -187,17 +186,20 @@ class TafsirConverter:
         current_sura_num: Optional[int] = None
         current_buffer: List[str] = []
         current_verse_list: List[int] = []
+        current_verse_range: Optional[Tuple[int, int]] = None  # Track if this is a range
 
         def flush_current():
-            nonlocal current_buffer, current_verse_list, current_sura_num
+            nonlocal current_buffer, current_verse_list, current_sura_num, current_verse_range
             if current_sura_num is None or not current_verse_list:
                 current_buffer = []
                 current_verse_list = []
+                current_verse_range = None
                 return
             text_blob = "\n".join(current_buffer).strip()
             if not text_blob:
                 current_buffer = []
                 current_verse_list = []
+                current_verse_range = None
                 return
             html = self.format_text_to_html(text_blob)
             sura_obj = suras.setdefault(current_sura_num, {
@@ -209,26 +211,43 @@ class TafsirConverter:
                 "introduction": "",
                 "verses": {}
             })
-            for v in current_verse_list:
-                # If verse already exists → append with a blank line, otherwise create new
-                if v in sura_obj["verses"] and sura_obj["verses"][v]:
-                    # Normalize existing text and check for duplicates
-                    existing = sura_obj["verses"][v].strip()
+            
+            # Store with range key if this is a range
+            if current_verse_range and len(current_verse_list) > 1:
+                range_key = f"{current_verse_range[0]}-{current_verse_range[1]}"
+                if range_key in sura_obj["verses"] and sura_obj["verses"][range_key]:
+                    existing = sura_obj["verses"][range_key].strip()
                     new_text = html.strip()
-                    # Remove leading/trailing <p> tags for comparison
                     existing_clean = re.sub(r'</?p>', '', existing).strip()
                     new_clean = re.sub(r'</?p>', '', new_text).strip()
-                    # Only append if not identical
                     if existing_clean != new_clean and new_clean not in existing_clean:
-                        sura_obj["verses"][v] = existing + '\n\n' + new_text
-                        print(f"  → Verse {current_sura_num}:{v} appended")
+                        sura_obj["verses"][range_key] = existing + '\n\n' + new_text
+                        print(f"  → Verse range {current_sura_num}:{range_key} appended")
                     else:
-                        print(f"  → Verse {current_sura_num}:{v} duplicate detected → skipped")
+                        print(f"  → Verse range {current_sura_num}:{range_key} duplicate detected → skipped")
                 else:
-                    sura_obj["verses"][v] = html
-                    print(f"  → Verse {current_sura_num}:{v} stored")
+                    sura_obj["verses"][range_key] = html
+                    print(f"  → Verse range {current_sura_num}:{range_key} stored")
+            else:
+                # Store individual verses
+                for v in current_verse_list:
+                    if v in sura_obj["verses"] and sura_obj["verses"][v]:
+                        existing = sura_obj["verses"][v].strip()
+                        new_text = html.strip()
+                        existing_clean = re.sub(r'</?p>', '', existing).strip()
+                        new_clean = re.sub(r'</?p>', '', new_text).strip()
+                        if existing_clean != new_clean and new_clean not in existing_clean:
+                            sura_obj["verses"][v] = existing + '\n\n' + new_text
+                            print(f"  → Verse {current_sura_num}:{v} appended")
+                        else:
+                            print(f"  → Verse {current_sura_num}:{v} duplicate detected → skipped")
+                    else:
+                        sura_obj["verses"][v] = html
+                        print(f"  → Verse {current_sura_num}:{v} stored")
+            
             current_buffer = []
             current_verse_list = []
+            current_verse_range = None
 
         i = 0
         while i < len(lines):
@@ -350,6 +369,13 @@ class TafsirConverter:
                         current_sura_num = sura_num
                     current_verse_list = verses
                     current_buffer = []
+                    
+                    # Check if this is a range (multiple verses)
+                    if len(verses) > 1:
+                        current_verse_range = (verses[0], verses[-1])
+                    else:
+                        current_verse_range = None
+                    
                     if trailing:
                         current_buffer.append(trailing)
                     k = i + 1
@@ -391,31 +417,32 @@ class TafsirConverter:
             sura = suras[sura_num]
             sura_verses = []
             
-            def verse_key_sorter(x):
-                if isinstance(x, int):
-                    return x
-                if isinstance(x, str) and ':' in x:
-                    return int(x.split(':')[1])
-                try:
-                    return int(x)
-                except Exception:
-                    return 0
-
-            verse_keys = sorted(sura['verses'].keys(), key=verse_key_sorter)
+            verse_keys = sorted(sura['verses'].keys(), key=lambda x: (
+                int(x.split('-')[0]) if isinstance(x, str) and '-' in x else x,
+                int(x.split('-')[1]) if isinstance(x, str) and '-' in x else 0
+            ))
             
             print(f"\n→ Sura {sura_num}:  {len(verse_keys)} verses found")
             
-            for idx, verse_key in enumerate(verse_keys):
+            for group_idx, verse_key in enumerate(verse_keys):
                 verse_text = sura['verses'][verse_key]
                 
-                # Convert verse_key to string format "SURA:VERSE"
-                if isinstance(verse_key, int):
-                    verse_key_str = f"{sura_num}:{verse_key}"
+                # Check if this is a range key (contains '-')
+                if isinstance(verse_key, str) and '-' in verse_key:
+                    parts = verse_key.split('-')
+                    verse_start = int(parts[0])
+                    verse_end = int(parts[1])
+                    # verse_key only contains the first verse number
+                    verse_key_str = f"{sura_num}:{verse_start}"
+                    # verses list contains all verses in the range
+                    verses_list = [f"{sura_num}:{v}" for v in range(verse_start, verse_end + 1)]
                 else:
-                    verse_key_str = str(verse_key)
+                    # Single verse
+                    verse_key_str = f"{sura_num}:{verse_key}"
+                    verses_list = [verse_key_str]
                 
-                # For first verse, include Sura introduction
-                if idx == 0:
+                # For first group, include Sura introduction
+                if group_idx == 0:
                     if sura['translation']:
                         header = f"<h2>Sura {sura['name']} ({sura['translation']})</h2>"
                     else:
@@ -432,7 +459,7 @@ class TafsirConverter:
                 verse_entry = {
                     "key": "de_tafsir-al-quran-al-karim",
                     "verse_key": verse_key_str,
-                    "verses": [verse_key_str],
+                    "verses": verses_list,
                     "text": full_text,
                     "timestamp": timestamp,
                     "version": "1.0",
@@ -448,7 +475,7 @@ class TafsirConverter:
                 with open(sura_file, 'w', encoding='utf-8') as f:
                     json.dump(sura_verses, f, ensure_ascii=False, indent=2)
                 
-                print(f"Created {sura_file.name} with {len(sura_verses)} verses")
+                print(f"Created {sura_file.name} with {len(sura_verses)} verse groups")
         
         # Write complete file with metadata
         complete_data = {
