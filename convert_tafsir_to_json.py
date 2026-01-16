@@ -408,6 +408,28 @@ class TafsirConverter:
         flush_current()
         return suras
     
+    def remove_duplicate_tags(self, html: str) -> str:
+        """Remove duplicate HTML tags."""
+        import re
+        # Remove duplicate opening tags
+        html = re.sub(r'<p>\s*<p>', '<p>', html)
+        html = re.sub(r'<strong>\s*<strong>', '<strong>', html)
+        html = re.sub(r'<em>\s*<em>', '<em>', html)
+        html = re.sub(r'<h2>\s*<h2>', '<h2>', html)
+        
+        # Remove duplicate closing tags
+        html = re.sub(r'</p>\s*</p>', '</p>', html)
+        html = re.sub(r'</strong>\s*</strong>', '</strong>', html)
+        html = re.sub(r'</em>\s*</em>', '</em>', html)
+        html = re.sub(r'</h2>\s*</h2>', '</h2>', html)
+        
+        # Remove tags wrapping empty content
+        html = re.sub(r'<p>\s*</p>', '', html)
+        html = re.sub(r'<strong>\s*</strong>', '', html)
+        html = re.sub(r'<em>\s*</em>', '', html)
+        
+        return html
+    
     def generate_json_output(self, suras:  Dict[int, Dict]):
         """Generate JSON output files."""
         all_verses = []
@@ -455,6 +477,9 @@ class TafsirConverter:
                     full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
                 else: 
                     full_text = self.format_text_to_html(verse_text)
+                
+                # Remove duplicate tags
+                full_text = self.remove_duplicate_tags(full_text)
                 
                 verse_entry = {
                     "key": "de_tafsir-al-quran-al-karim",
