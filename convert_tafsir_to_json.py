@@ -408,6 +408,12 @@ class TafsirConverter:
             for idx, verse_key in enumerate(verse_keys):
                 verse_text = sura['verses'][verse_key]
                 
+                # Convert verse_key to string format "SURA:VERSE"
+                if isinstance(verse_key, int):
+                    verse_key_str = f"{sura_num}:{verse_key}"
+                else:
+                    verse_key_str = str(verse_key)
+                
                 # For first verse, include Sura introduction
                 if idx == 0:
                     if sura['translation']:
@@ -425,8 +431,8 @@ class TafsirConverter:
                 
                 verse_entry = {
                     "key": "de_tafsir-al-quran-al-karim",
-                    "verse_key": verse_key,
-                    "verses": [verse_key],
+                    "verse_key": verse_key_str,
+                    "verses": [verse_key_str],
                     "text": full_text,
                     "timestamp": timestamp,
                     "version": "1.0",
@@ -442,7 +448,7 @@ class TafsirConverter:
                 with open(sura_file, 'w', encoding='utf-8') as f:
                     json.dump(sura_verses, f, ensure_ascii=False, indent=2)
                 
-                print(f"Created {sura_file. name} with {len(sura_verses)} verses")
+                print(f"Created {sura_file.name} with {len(sura_verses)} verses")
         
         # Write complete file with metadata
         complete_data = {
