@@ -446,22 +446,42 @@ class TafsirConverter:
             
             print(f"\n→ Sura {sura_num}:  {len(verse_keys)} verses found")
             
-            for group_idx, verse_key in enumerate(verse_keys):
-                verse_text = sura['verses'][verse_key]
-                
+            # Dictionary to merge verse ranges with same starting verse
+            merged_verses = {}
+            
+            for verse_key in verse_keys:
                 # Check if this is a range key (contains '-')
                 if isinstance(verse_key, str) and '-' in verse_key:
                     parts = verse_key.split('-')
                     verse_start = int(parts[0])
                     verse_end = int(parts[1])
-                    # verse_key only contains the first verse number
-                    verse_key_str = f"{sura_num}:{verse_start}"
-                    # verses list contains all verses in the range
-                    verses_list = [f"{sura_num}:{v}" for v in range(verse_start, verse_end + 1)]
+                    
+                    # If we already have content for this starting verse, append it
+                    if verse_start in merged_verses:
+                        merged_verses[verse_start]['text'].append(sura['verses'][verse_key])
+                        # Extend verses list
+                        for v in range(verse_start, verse_end + 1):
+                            if f"{sura_num}:{v}" not in merged_verses[verse_start]['verses']:
+                                merged_verses[verse_start]['verses'].append(f"{sura_num}:{v}")
+                    else:
+                        merged_verses[verse_start] = {
+                            'text': [sura['verses'][verse_key]],
+                            'verses': [f"{sura_num}:{v}" for v in range(verse_start, verse_end + 1)]
+                        }
                 else:
                     # Single verse
-                    verse_key_str = f"{sura_num}:{verse_key}"
-                    verses_list = [verse_key_str]
+                    if verse_key in merged_verses:
+                        merged_verses[verse_key]['text'].append(sura['verses'][verse_key])
+                    else:
+                        merged_verses[verse_key] = {
+                            'text': [sura['verses'][verse_key]],
+                            'verses': [f"{sura_num}:{verse_key}"]
+                        }
+            
+            # Now create JSON entries from merged data
+            for group_idx, (verse_key, data) in enumerate(sorted(merged_verses.items())):
+                # Combine all text parts
+                combined_text = '\n\n'.join(data['text'])
                 
                 # For first group, include Sura introduction
                 if group_idx == 0:
@@ -473,18 +493,18 @@ class TafsirConverter:
                     location = f"<p><em>(offenbart zu {sura['location']})</em></p>"
                     vc = f"<p><em>{sura['verse_count']} Āyāt</em></p>"
                     intro_html = self.format_text_to_html(sura['introduction'])
-                    verse_html = self.format_text_to_html(verse_text)
+                    verse_html = self.format_text_to_html(combined_text)
                     full_text = f"{header}\n{location}\n{vc}\n{intro_html}\n{verse_html}"
                 else: 
-                    full_text = self.format_text_to_html(verse_text)
+                    full_text = self.format_text_to_html(combined_text)
                 
                 # Remove duplicate tags
                 full_text = self.remove_duplicate_tags(full_text)
                 
                 verse_entry = {
                     "key": "de_tafsir-al-quran-al-karim",
-                    "verse_key": verse_key_str,
-                    "verses": verses_list,
+                    "verse_key": f"{sura_num}:{verse_key}",
+                    "verses": data['verses'],
                     "text": full_text,
                     "timestamp": timestamp,
                     "version": "1.0",
